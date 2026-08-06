@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>新概念听写 · 谷sir</title>
+
+<!-- ============================================================= -->
+<!--  【谷sir 出题区】只改下面这个 DICTATIONS 就能加题。            -->
+<!--  一篇听写 = 一条数据：改 title / titleCn / audio / answer 四项。 -->
+<!--  复制一整块 { ... }，粘在下面，改三个字段，就是一篇新题。       -->
+<!-- ============================================================= -->
+<script>
+const DICTATIONS = [
+  {
+    title: "Demo — A Walk to the Station",   // 英文标题（学生看到的）
+    titleCn: "示例课文（可删）",               // 中文小标（可留空 ""）
+    audio: "https://www.w3schools.com/html/horse.mp3", // 音频链接（先用测试音验证播放，之后换成你的 mp3 链接）
+    answer: `This is a sample passage. Replace it with your own New Concept text.
+Yesterday I walked to the station and bought a ticket to London.
+The train was late, so I waited on the platform and read my book.`  // 答案原文，换行照样保留
+  },
+  {
+    title: "Demo — At the Restaurant",
+    titleCn: "示例课文（可删）",
+    audio: "https://www.w3schools.com/html/horse.mp3",
+    answer: `Another sample passage for testing.
+We had dinner at a small restaurant near the river.
+The food was good and the waiter was very kind.`
+  }
+  // ↓↓↓ 复制这一块加新题 ↓↓↓
+  // ,{
+  //   title: "Lesson 1 — A Private Conversation",
+  //   titleCn: "第一课",
+  //   audio: "https://你的域名/nce2-01.mp3",
+  //   answer: `把整段课文粘在这里，
+  // 一行一句，换行会原样显示。`
+  // }
+];
+</script>
+<!-- ============================================================= -->
+
+<style>
+  :root{
+    --ink:#16233B;        /* 标题/强调 */
+    --body:#3A4657;       /* 正文 */
+    --muted:#7A8698;      /* 说明/时间 */
+    --bg:#EDEFF2;         /* 页面底色 */
+    --surface:#FFFFFF;    /* 卡片 */
+    --line:#E1E5EA;       /* 分隔线 */
+    --accent:#E0A02B;     /* 暖琥珀：播放/主按钮 */
+    --accent-dark:#C4881A;
+    --paper:#FCFBF6;      /* 答案纸底色 */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);
+    color:var(--body);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    padding:20px 16px 40px;
+  }
+  .wrap{max-width:480px;margin:0 auto}
+
+  /* 头部 */
+  header{margin-bottom:18px}
+  .eyebrow{
+    font-size:12px;letter-spacing:.18em;color:var(--accent-dark);
+    font-weight:600;margin-bottom:6px;
+  }
+  h1{
+    font-size:22px;line-height:1.25;color:var(--ink);
+    font-weight:700;margin:0;
+  }
+  .sub{font-size:13px;color:var(--muted);margin-top:6px}
+
+  /* 卡片 */
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:18px;margin-bottom:16px;
+  }
+
+  /* 课文选择 */
+  label.field{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+  select{
+    width:100%;font-size:16px;color:var(--ink);
+    padding:12px 14px;border:1px solid var(--line);border-radius:10px;
+    background:#fff;-webkit-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%237A8698' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;
+  }
+
+  /* 当前课文标题 */
+  .lesson-title{font-size:19px;color:var(--ink);font-weight:700;margin:0 0 2px}
+  .lesson-cn{font-size:13px;color:var(--muted);margin:0 0 16px}
+
+  /* 音频 */
+  audio{width:100%;display:block;margin-bottom:14px}
+  .audio-err{
+    display:none;font-size:14px;color:#B4453A;
+    background:#FCEDEC;border:1px solid #F2C9C4;border-radius:10px;
+    padding:10px 12px;margin-bottom:14px;
+  }
+
+  /* 辅助按钮：倒退 / 变速 */
+  .controls{display:flex;gap:10px}
+  .controls button{
+    flex:1;font-size:15px;font-weight:600;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:12px 6px;cursor:pointer;
+    transition:transform .08s ease,border-color .15s ease;
+  }
+  .controls button:active{transform:scale(.97)}
+  #speedBtn{color:var(--accent-dark);border-color:#F0DCA9;background:#FEF9EE}
+
+  /* 主按钮：显示答案 */
+  .reveal-btn{
+    width:100%;font-size:17px;font-weight:700;
+    color:var(--ink);background:var(--accent);
+    border:none;border-radius:12px;padding:15px;cursor:pointer;
+    margin-top:2px;transition:transform .08s ease,background .15s ease;
+  }
+  .reveal-btn:active{transform:scale(.99)}
+  .reveal-btn:hover{background:var(--accent-dark);color:#fff}
+
+  /* 答案纸（签名元素） */
+  .answer{
+    margin-top:16px;background:var(--paper);
+    border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 10px 10px 0;padding:18px 20px;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:17px;line-height:1.9;color:var(--ink);
+    white-space:pre-wrap;
+  }
+  .answer[hidden]{display:none}
+  @media (prefers-reduced-motion:no-preference){
+    .answer{animation:fade .28s ease}
+  }
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  footer{text-align:center;font-size:12px;color:var(--muted);margin-top:24px}
+
+  /* 键盘可达性 */
+  button:focus-visible,select:focus-visible{outline:2px solid var(--accent-dark);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">谷sir 说英语</div>
+    <h1>新概念听写</h1>
+    <div class="sub">先在本子上默写，再点“显示答案”自己对照。</div>
+  </header>
+
+  <div class="card">
+    <label class="field" for="picker">选择课文</label>
+    <select id="picker" aria-label="选择课文"></select>
+  </div>
+
+  <div class="card">
+    <div class="lesson-title" id="title"></div>
+    <div class="lesson-cn" id="titleCn"></div>
+
+    <audio id="audio" controls preload="metadata"></audio>
+    <div class="audio-err" id="err">音频加载失败：请检查链接是否有效，或是否被微信拦截。</div>
+
+    <div class="controls">
+      <button type="button" id="back5" aria-label="倒退5秒">⟲ 5秒</button>
+      <button type="button" id="back10" aria-label="倒退10秒">⟲ 10秒</button>
+      <button type="button" id="speedBtn" aria-label="切换播放速度">1.0×</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <button type="button" class="reveal-btn" id="revealBtn">显示答案</button>
+    <div class="answer" id="answer" hidden></div>
+  </div>
+
+  <footer>谷sir · 新概念听写练习</footer>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const picker = $("picker"), audio = $("audio"), err = $("err");
+  const titleEl = $("title"), titleCnEl = $("titleCn");
+  const revealBtn = $("revealBtn"), answerEl = $("answer");
+  const speeds = [1, 0.75, 0.5];
+  let speedIdx = 0;
+
+  // 填充下拉
+  DICTATIONS.forEach((d, i) => {
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = d.title + (d.titleCn ? "（" + d.titleCn + "）" : "");
+    picker.appendChild(o);
+  });
+
+  function applySpeed(){ audio.playbackRate = speeds[speedIdx]; }
+
+  function load(i){
+    const d = DICTATIONS[i];
+    titleEl.textContent = d.title;
+    titleCnEl.textContent = d.titleCn || "";
+    err.style.display = "none";
+    audio.src = d.audio;
+    audio.load();
+    speedIdx = 0; $("speedBtn").textContent = "1.0×"; applySpeed();
+    answerEl.textContent = d.answer;
+    answerEl.hidden = true;
+    revealBtn.textContent = "显示答案";
+  }
+
+  picker.addEventListener("change", e => load(+e.target.value));
+
+  // 倒退
+  $("back5").addEventListener("click", () => { audio.currentTime = Math.max(0, audio.currentTime - 5); });
+  $("back10").addEventListener("click", () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+
+  // 变速：1.0 → 0.75 → 0.5 → 循环
+  $("speedBtn").addEventListener("click", () => {
+    speedIdx = (speedIdx + 1) % speeds.length;
+    $("speedBtn").textContent = speeds[speedIdx].toFixed(2).replace(/0$/,"") + "×";
+    applySpeed();
+  });
+  // 部分浏览器 play 时会重置速度，播放时再兜底一次
+  audio.addEventListener("play", applySpeed);
+
+  // 显示 / 隐藏答案
+  revealBtn.addEventListener("click", () => {
+    const show = answerEl.hidden;
+    answerEl.hidden = !show;
+    revealBtn.textContent = show ? "隐藏答案" : "显示答案";
+  });
+
+  // 音频报错提示
+  audio.addEventListener("error", () => { err.style.display = "block"; });
+
+  // 初始化
+  if (DICTATIONS.length) load(0);
+})();
+</script>
+</body>
+</html>
